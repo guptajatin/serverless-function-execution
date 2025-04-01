@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  dispatcher:
+    build: ./dispatcher
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - dispatcher
+
+  python-worker:
+    build: ./python_worker
+    ports:
+      - "8001:8000"
+
+  js-worker:
+    build: ./js_worker
+    ports:
+      - "8002:8000"

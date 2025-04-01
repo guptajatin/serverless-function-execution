@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Function Executor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        select, input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        textarea {
+            width: 100%;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre;
+            tab-size: 4;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            background: #f8f9fa;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .input-help {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+        #output {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status-success {
+            color: #27ae60;
+        }
+        .status-error {
+            color: #e74c3c;
+        }
+        .status-timeout {
+            color: #f39c12;
+        }
+        .result-box {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            border: 1px solid #eee;
+        }
+        .result-label {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metric-card {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        .metric-trend {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        .metric-trend.positive {
+            color: #27ae60;
+        }
+        .metric-trend.negative {
+            color: #e74c3c;
+        }
+        .metrics-history {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .metrics-history h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .history-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        .history-table tr:hover {
+            background: #f8f9fa;
+        }
+        .error-rate {
+            color: #e74c3c;
+        }
+        .success-rate {
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Function Executor</h2>
+        <form id="jobForm">
+            <div class="form-group">
+                <label>Language:</label>
+                <select id="language">
+                    <option value="python">Python</option>
+                    <option value="js">JavaScript</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Code:</label>
+                <textarea id="code" rows="10" spellcheck="false" placeholder="Python examples:&#10;&#10;# Multiple arguments&#10;def main(*args):&#10;    return sum(int(x) for x in args)&#10;&#10;# List input&#10;def main(x):&#10;    numbers = [int(n) for n in x.split(',')]&#10;    return sum(numbers)"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Input (optional):</label>
+                <input id="input" type="text" placeholder="For multiple inputs use: 1,2,3 or ['a','b','c'] or {'x':1,'y':2}">
+                <div class="input-help">
+                    Input formats:<br>
+                    - Single value: "5"<br>
+                    - Multiple values: "1,2,3"<br>
+                    - JSON array: "[1,2,3]"<br>
+                    - JSON object: "{'x':1,'y':2}"
+                </div>
+            </div>
+            <button type="submit">Run Function</button>
+        </form>
+
+        <div id="output"></div>
+
+        <div class="metrics-container">
+            <div class="metric-card">
+                <div class="metric-label">Average Response Time</div>
+                <div class="metric-value" id="avgResponseTime">-</div>
+                <div class="metric-trend" id="responseTimeTrend"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" id="successRate">-</div>
+                <div class="metric-trend" id="successRateTrend"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Error Rate</div>
+                <div class="metric-value" id="errorRate">-</div>
+                <div class="metric-trend" id="errorRateTrend"></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Executions</div>
+                <div class="metric-value" id="totalExecutions">-</div>
+                <div class="metric-trend" id="executionsTrend"></div>
+            </div>
+        </div>
+
+        <div class="metrics-history">
+            <h3>Execution History</h3>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Language</th>
+                        <th>Status</th>
+                        <th>Response Time</th>
+                        <th>Memory Usage</th>
+                    </tr>
+                </thead>
+                <tbody id="executionHistory"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Store execution history and metrics
+        let executionHistory = [];
+        let metrics = {
+            totalExecutions: 0,
+            successfulExecutions: 0,
+            totalResponseTime: 0
+        };
+
+        function updateMetrics(response) {
+            // Update total executions
+            metrics.totalExecutions++;
+            
+            // Update successful executions
+            if (response.status === 'completed') {
+                metrics.successfulExecutions++;
+            }
+            
+            // Update response time
+            if (response.executionTime) {
+                metrics.totalResponseTime += response.executionTime;
+            }
+
+            // Calculate rates and averages
+            const successRate = (metrics.successfulExecutions / metrics.totalExecutions) * 100;
+            const errorRate = 100 - successRate;
+            const avgResponseTime = metrics.totalResponseTime / metrics.totalExecutions;
+
+            // Update display
+            document.getElementById('totalExecutions').textContent = metrics.totalExecutions;
+            document.getElementById('successRate').textContent = `${successRate.toFixed(1)}%`;
+            document.getElementById('errorRate').textContent = `${errorRate.toFixed(1)}%`;
+            document.getElementById('avgResponseTime').textContent = `${avgResponseTime.toFixed(2)}ms`;
+
+            // Update trends
+            updateTrend('successRateTrend', successRate, 'Success rate');
+            updateTrend('errorRateTrend', errorRate, 'Error rate');
+            updateTrend('executionsTrend', metrics.totalExecutions, 'Total');
+        }
+
+        function updateTrend(elementId, value, label) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const trend = value > 0 ? '↑' : value < 0 ? '↓' : '→';
+                element.textContent = `${trend} ${label}`;
+                element.className = `metric-trend ${value > 0 ? 'positive' : value < 0 ? 'negative' : ''}`;
+            }
+        }
+
+        function updateHistoryTable(response) {
+            // Add new execution to history
+            executionHistory.push({
+                timestamp: new Date().toISOString(),
+                language: response.language || 'unknown',
+                status: response.status,
+                executionTime: response.executionTime || 0,
+                memoryUsage: response.memoryUsage || 0
+            });
+
+            // Keep only last 10 executions
+            if (executionHistory.length > 10) {
+                executionHistory.shift();
+            }
+
+            // Update the table
+            const tbody = document.getElementById('executionHistory');
+            if (tbody) {  // Make sure the element exists
+                tbody.innerHTML = executionHistory.map(execution => `
+                    <tr>
+                        <td>${new Date(execution.timestamp).toLocaleTimeString()}</td>
+                        <td>${execution.language}</td>
+                        <td class="${execution.status === 'completed' ? 'success-rate' : 'error-rate'}">${execution.status}</td>
+                        <td>${execution.executionTime.toFixed(2)}ms</td>
+                        <td>${(execution.memoryUsage / (1024 * 1024)).toFixed(2)}MB</td>
+                    </tr>
+                `).join('');
+            } else {
+                console.error('Execution history table not found');
+            }
+        }
+
+        function formatResponse(response) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+
+            // Create status indicator
+            const statusClass = response.status === 'completed' ? 'status-success' : 
+                              response.status === 'timeout' ? 'status-timeout' : 'status-error';
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `result-label ${statusClass}`;
+            statusDiv.textContent = `Status: ${response.status}`;
+            outputDiv.appendChild(statusDiv);
+
+            // Create result box
+            const resultBox = document.createElement('div');
+            resultBox.className = 'result-box';
+
+            if (response.error) {
+                resultBox.innerHTML = `<div class="result-label status-error">Error:</div>${response.error}`;
+            } else if (response.result !== null && response.result !== undefined) {
+                resultBox.innerHTML = `<div class="result-label">Result:</div>${JSON.stringify(response.result, null, 2)}`;
+            }
+
+            outputDiv.appendChild(resultBox);
+
+            // Add printed output if exists
+            if (response.printed) {
+                const printedBox = document.createElement('div');
+                printedBox.className = 'result-box';
+                printedBox.innerHTML = `<div class="result-label">Printed Output:</div>${response.printed}`;
+                outputDiv.appendChild(printedBox);
+            }
+
+            // Update metrics and history
+            updateMetrics(response);
+            updateHistoryTable(response);
+        }
+
+        document.getElementById("jobForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const language = document.getElementById("language").value;
+            const code = document.getElementById("code").value;
+            let input = document.getElementById("input").value;
+            const outputElement = document.getElementById("output");
+
+            try {
+                // Show loading state
+                outputElement.innerHTML = '<div class="loading"></div>Processing...';
+
+                // Try to parse input as JSON if it starts with [ or {
+                if (input && (input.startsWith('[') || input.startsWith('{'))) {
+                    try {
+                        input = JSON.parse(input.replace(/'/g, '"'));
+                    } catch (e) {
+                        throw new Error("Invalid JSON input format");
+                    }
+                } else if (input && input.includes(',')) {
+                    input = input.split(',').map(x => {
+                        const trimmed = x.trim();
+                        const num = Number(trimmed);
+                        return isNaN(num) ? trimmed : num;
+                    });
+                } else if (input) {
+                    const num = Number(input);
+                    input = isNaN(num) ? input : num;
+                }
+
+                const response = await fetch("http://localhost:8000/execute", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        lang: language,
+                        code: code,
+                        input: input || null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                formatResponse(result);
+            } catch (error) {
+                outputElement.innerHTML = `<div class="status-error">Error: ${error.message}</div>`;
+                console.error('Error:', error);
+            }
+        });
+
+        // Handle tabs in textarea
+        document.getElementById("code").addEventListener("keydown", function(e) {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    </script>
+</body>
+</html>
